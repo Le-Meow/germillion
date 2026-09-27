@@ -55,6 +55,13 @@ test('HTTP game lifecycle, timing, persistence, isolation and challenge distribu
   assert.equal(r.status, 'complete'); assert.equal(r.score, 100);
   assert.equal(r.answers.length, 7); assert.equal(r.answers[0].top.length, 5);
   assert.equal(r.stats.count, 1); assert.equal(r.streak, 1);
+  const compatibilityDb = new DatabaseSync(path);
+  const legacyState = JSON.parse(compatibilityDb.prepare('SELECT state FROM runs WHERE id=?').get(r.id).state);
+  legacyState.prompts[0] = 'country-area';
+  compatibilityDb.prepare('INSERT INTO runs(id,player,day,mode,state,score,created) VALUES(?,?,?,?,?,?,?)')
+    .run('legacy-test', 'legacy-player', r.day, 'daily', JSON.stringify(legacyState), 99, Date.now());
+  compatibilityDb.close();
+  assert.equal((await a(`/api/run/${r.id}`)).body.stats.count, 1, 'old scoring pools stay out of the new distribution');
   assert.equal((await a(`/api/run/${r.id}/share`, { name: 'rion' })).status, 200);
   assert.deepEqual((await b(`/api/challenge/${r.id}`)).body, { name: 'rion', day: today() });
   let c = (await b('/api/run', { mode: 'challenge', challenge: r.id })).body;

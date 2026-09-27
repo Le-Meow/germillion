@@ -39,7 +39,8 @@ function finishAnswer(run, answer, expired) {
   save(run);
 }
 function stats(run) {
-  const scores = db.prepare("SELECT score FROM runs WHERE day=? AND mode='daily' AND score IS NOT NULL").all(run.day).map(r => r.score);
+  const scores = db.prepare("SELECT score,state FROM runs WHERE day=? AND mode='daily' AND score IS NOT NULL").all(run.day)
+    .filter(r => JSON.stringify(JSON.parse(r.state).prompts) === JSON.stringify(run.prompts)).map(r => r.score);
   return distribution(scores, totalScore(run.answers));
 }
 function streak(player) {

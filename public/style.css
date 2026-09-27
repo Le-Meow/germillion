@@ -4,5 +4,6 @@
 @media(min-height:850px){.terminal{padding-top:7vh}.memory{margin-top:6vh}#screen{margin-top:8vh}footer{margin-top:7vh}}
 @media(max-width:600px){body{font-size:22px}.terminal{width:calc(100% - 40px);padding-top:28px}.wordmark{font-size:21px}.sound{font-size:14px}.memory{width:310px;max-width:92%;margin-top:28px}#screen{margin-top:42px;min-height:240px}h1{font-size:37px}.axis{font-size:23px}.answer-form{margin-top:31px}.answer-line{font-size:32px}.quiet{font-size:15px}.enter{font-size:18px}footer{margin-top:35px}.result-actions{gap:8px}.result-actions button{font-size:18px;padding:8px 12px}dialog{padding:29px 23px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important}body::after{display:none}}
+.payload{font-size:17px;color:var(--dim);margin-bottom:12px}.breach{animation:breach .65s ease-out}@keyframes breach{0%{filter:drop-shadow(0 0 7px #82ee9470)}100%{filter:none}}
 @media(max-height:800px) and (min-width:601px){.terminal{padding-top:28px}.memory{margin-top:24px;width:340px}#screen{margin-top:38px}footer{margin-top:24px}.reveal .primary{margin-top:16px}.reveal-value{margin-bottom:14px}}
 @media(max-height:580px){.terminal{padding-top:16px}.memory{width:210px;margin-top:15px}#screen{margin-top:24px}.answer-form{margin-top:20px}.playing h1{margin-top:16px}.playing footer{display:none}}

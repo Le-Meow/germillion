@@ -1,24 +1,31 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-export const data = JSON.parse(readFileSync(new URL('./data/prompts.json', import.meta.url), 'utf8'));
+const legacy = JSON.parse(readFileSync(new URL('./data/prompts.json', import.meta.url), 'utf8'));
+export const data = JSON.parse(readFileSync(new URL('./data/curated.json', import.meta.url), 'utf8'));
 export const ROUND_MS = 20_000;
 export const ROUNDS = 7;
 export const CHUNK = 100 / ROUNDS;
 export const today = () => new Date().toISOString().slice(0, 10);
 export const normalize = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, 'and').replace(/^the\s+/, '').replace(/[^a-z0-9]/g, '');
 const hash = text => createHash('sha256').update(text).digest().readUInt32BE(0);
-export const prompts = new Map(data.prompts.map(p => [p.id, {
+export const prompts = new Map([...legacy.prompts, ...data.prompts].map(p => [p.id, {
   ...p,
   entries: p.entries.map(e => ({ ...e, keys: [...new Set([e.name, ...e.aliases].map(normalize))] })),
 }]));
 export function dailyPrompts(seed) {
-  const families = [...new Set(data.prompts.map(p => p.family))];
-  return families.map(family => {
-    const options = data.prompts.filter(p => p.family === family);
-    return options[hash(`${seed}:${family}`) % options.length].id;
-  }).sort((a, b) => hash(`${seed}:${a}`) - hash(`${seed}:${b}`));
+  // ponytail: one reviewed set for playtesting; add dated sets when editorially ready.
+  return data.prompts.map(p => p.id).sort((a, b) => hash(`${seed}:${a}`) - hash(`${seed}:${b}`));
 }
+function payloadFraction(value, anchors) {
+  if (value <= anchors[0][0]) return anchors[0][1];
+  for (let i = 1; i < anchors.length; i++) {
+    const [high, highScore] = anchors[i], [low, lowScore] = anchors[i - 1];
+    if (value <= high) return lowScore + (value - low) / (high - low) * (highScore - lowScore);
+  }
+  return anchors.at(-1)[1];
+}
+const potency = fraction => fraction === 1 ? 'TOTAL TAKEOVER' : fraction >= .85 ? 'CRITICAL' : fraction >= .65 ? 'VIRULENT' : fraction >= .4 ? 'SPREADING' : fraction >= .2 ? 'ACTIVE' : 'TRACE';
 function distance(a, b) {
   let prev = Array.from({ length: b.length + 1 }, (_, i) => i), before;
   for (let i = 1; i <= a.length; i++) {
@@ -52,15 +59,16 @@ export function grade(id, answer, expired = false) {
   const lower = prompt.entries.filter(e => e.value < entry.value).length;
   const higher = prompt.entries.filter(e => e.value > entry.value).length;
   const max = Math.max(...prompt.entries.map(e => e.value));
-  const fraction = entry.value === max ? 1 : lower / (prompt.entries.length - 1);
-  return { input: answer, valid: true, name: entry.name, value: entry.value, rank: higher + 1, total: prompt.entries.length, fraction, points: fraction * CHUNK };
+  const fraction = prompt.anchors ? payloadFraction(entry.value, prompt.anchors) : entry.value === max ? 1 : lower / (prompt.entries.length - 1);
+  return { input: answer, valid: true, name: entry.name, value: entry.value, rank: higher + 1, total: prompt.entries.length, fraction, points: fraction * CHUNK, potency: potency(fraction) };
 }
 export function publicPrompt(id) {
-  const { title, axis, unit, scope, source, entries } = prompts.get(id);
-  return { title, axis, unit, scope, source, count: entries.length };
+  const { title, axis, unit, scope, source, entries, anchors } = prompts.get(id);
+  return { title, axis, unit, scope, source, anchors, count: entries.length };
 }
 export function topFive(id) {
-  return [...prompts.get(id).entries].sort((a, b) => b.value - a.value || a.name.localeCompare(b.name)).slice(0, 5).map(({ name, value }) => ({ name, value }));
+  const entries = prompts.get(id).entries;
+  return [...entries].sort((a, b) => b.value - a.value || a.name.localeCompare(b.name)).slice(0, 5).map(({ name, value }) => ({ name, value, rank: entries.filter(e => e.value > value).length + 1 }));
 }
 export function attackPoints(yours, theirs) {
   if (yours.valid === true && theirs.valid === false) return CHUNK;

@@ -2,7 +2,7 @@
 
 Seven questions. Twenty seconds each. Your answers infect the machine.
 
-A playable daily trivia game with green DOS text, a spreading field of corrupted characters, and no mascot. Pick an answer high on the question's numerical scale. Its rank determines how much of the computer you infect.
+A playable daily trivia game with green DOS text, a spreading field of corrupted characters, and no mascot. Pick an answer high on the question's numerical scale. Its measured value determines how much of the computer you infect.
 
 ## Run
 
@@ -21,7 +21,7 @@ npm test
 
 - Seven deterministic daily prompts, shared globally; reset at midnight UTC.
 - Server-timed 20-second rounds, one answer each, manual advance between reveals.
-- Catalogue-relative scoring, tied values treated equally, aliases and conservative typo matching.
+- Fixed per-question measurement scales, tied values treated equally, aliases and conservative typo matching.
 - Animated 100-file text corruption, optional synthesized sound, reduced-motion support, responsive layout.
 - Saved daily progress and streaks, including after server restarts.
 - Results with top-five answers, sources, actual daily score distribution and sample size. No fabricated players or assumed bell curve.
@@ -30,13 +30,11 @@ npm test
 
 ## Content
 
-`data/prompts.json` is a frozen, versioned starter catalogue: 196 countries, 118 elements, the original 151 Pokémon, 83 studied mammals, 50 US states and 4,790 film titles. There are ten scoring axes across seven daily slots; countries appear twice with different axes. The order and variant axes change by UTC date.
+`data/curated.json` contains **one researched seven-question playtest set**: forest share, mammal sleep, original Pokémon base Speed, Oscar nominations, state water share, metal melting points and alcohol consumption per person. See [QUESTION-SET.md](QUESTION-SET.md) for sources, precise scopes, calibration examples and rebuild instructions.
 
-This is a **first playable build**, not a finished editorial catalogue. Film records are a pre-2017 snapshot and may use different cuts; the source includes some television material. Mammal coverage is restricted to the msleep study, and measurements are study averages. These scope limits are exposed in each prompt's `[?]` and results. Broader, manually reviewed question packs are the next content step before a public launch. Official-language counts are deliberately not inferred from a list of spoken languages.
+The daily and Unlimited currently reorder this same set. This is not yet a full daily editorial bank. Source years and coverage are shown in each question's [?] and in the final report. The old `data/prompts.json` remains loaded for compatibility with saved prototype runs.
 
-Raw source downloads are excluded from Git. To refresh, run `npm run data` with network access, review the results, update the data version and retain old versions if live runs exist. **Do not change the catalogue under existing daily runs.** The current deployment must keep its dataset fixed until all current runs finish; long-term archives will need versioned catalogues.
-
-Scoring: each question owns 1/7 of 100%. A maximum value earns the full chunk; otherwise `strictly lower answers / (answer count - 1)` determines the share. Equal numeric values earn equal shares. Invalid or late answers earn zero. Aggregate scores round only for display/storage comparison.
+Scoring: each question owns 1/7 of 100%. Fixed numerical anchors interpolate smoothly from weak to exceptional values; the highest earns the full chunk. Equal measurements earn equal shares. Invalid or late answers earn zero. Scores do not depend on answer popularity or how many weak entries exist in the catalogue. The [?] shows the round's scale. Old prompt IDs retain their original percentile scoring, and daily population comparisons exclude runs with different prompt sets.
 
 ## Hosting
 
@@ -63,8 +61,9 @@ Factual extracts retain names, numerical measurements and answer aliases only:
 - Elements: [Bowserinator/Periodic-Table-JSON](https://github.com/Bowserinator/Periodic-Table-JSON), source measurements linked to Wikipedia.
 - Pokémon: [veekun/pokedex](https://github.com/veekun/pokedex), factual Pokédex values. Pokémon names are owned by their respective rights holders; no artwork is included.
 - Mammals: [ggplot2 msleep](https://ggplot2.tidyverse.org/reference/msleep.html), via [Rdatasets](https://github.com/vincentarelbundock/Rdatasets). V. M. Savage and G. B. West (2007), “A quantitative, theoretical framework for understanding mammalian sleep,” PNAS.
-- Films: [sundeepblue/movie_rating_prediction](https://github.com/sundeepblue/movie_rating_prediction), IMDb 5000 snapshot. Most-voted version chosen for duplicate titles; runtime range 40–300 minutes.
-- US state areas: [jakevdp/data-USstates](https://github.com/jakevdp/data-USstates), total square miles in its frozen snapshot.
+- Legacy films: [sundeepblue/movie_rating_prediction](https://github.com/sundeepblue/movie_rating_prediction), IMDb 5000 snapshot. Most-voted version chosen for duplicate titles; runtime range 40–300 minutes.
+- New curated sources: World Bank/FAO/WHO, US Census 2010, DLu’s Academy database extract (BSD-2-Clause, retained in `data/OSCAR-LICENSE.txt`), and Royal Society of Chemistry. Full links in [QUESTION-SET.md](QUESTION-SET.md).
+- Legacy US state areas: [jakevdp/data-USstates](https://github.com/jakevdp/data-USstates), total square miles in its frozen snapshot.
 - Font: [VT323](https://github.com/google/fonts/tree/main/ofl/vt323), Peter Hull, SIL Open Font License. Full license: `public/licenses/VT323-OFL.txt`.
 
 Source links and coverage are also available inside the game. Review source terms and editorial coverage before commercial release.
