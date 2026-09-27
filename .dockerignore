@@ -1,0 +1,5 @@
+.git
+var
+data/*.raw
+node_modules
+test-artifacts
