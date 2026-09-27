@@ -75,6 +75,7 @@ $('.wordmark').addEventListener('click', () => {
   try { sessionStorage.removeItem('germillion-run'); } catch { /* Daily also restores from the cookie. */ }
 });
 function setRun(next) {
+  if (run?.id !== next.id) displayedScore = next.score;
   run = next; targetScore = next.score;
   try { sessionStorage.setItem('germillion-run', next.id); } catch { /* Cookies still preserve daily progress. */ }
 }
