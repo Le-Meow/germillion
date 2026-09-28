@@ -1,29 +1,20 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#030805">
-  <meta name="description" content="Seven questions. Twenty seconds. One computer to infect. A daily trivia game in green phosphor.">
-  <title>Germillion — a daily infection</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0B0D0C"><meta name="description" content="Seven questions. One virus. How far into the system can you get?">
+  <title>Germillion — enter the system</title><link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/font.ttf" as="font" type="font/ttf" crossorigin>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/app.js" type="module"></script>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" type="module"></script>
 </head>
-<body>
+<body data-view="intro">
   <a class="skip" href="#screen">Skip to game</a>
-  <main class="terminal">
-    <header><a class="wordmark" href="/" aria-label="Germillion home">GERMILLION</a><button class="sound" id="sound" aria-label="Enable sound" aria-pressed="false" title="Enable sound">SND OFF</button></header>
-    <section class="memory" aria-label="Computer infection">
-      <canvas id="memory" width="640" height="260" aria-hidden="true"></canvas>
-      <p id="infection" class="infection">0% INFECTED</p>
-    </section>
-    <section id="screen" tabindex="-1"><p class="connecting">Connecting<span class="blink">_</span></p></section>
-    <p id="error" role="alert" hidden></p>
-    <footer id="footer"><button id="how">How to play</button><span aria-hidden="true">·</span><button id="practice">Unlimited</button><span aria-hidden="true">·</span><button id="archive">Archive</button></footer>
-  </main>
-  <dialog id="info"><form method="dialog"><button class="close" aria-label="Close dialog">×</button></form><div id="info-content"></div></dialog>
-  <noscript>Germillion needs JavaScript to run the 20-second clock. Enable it and reload.</noscript>
-</body>
-</html>
+  <canvas id="world" aria-hidden="true"></canvas>
+  <header class="hud"><a class="wordmark" data-page href="/" aria-label="Germillion home">GERMILLION</a><span id="round-label">A:\</span><span id="infection">0 MB</span></header>
+  <main><section id="screen" tabindex="-1"><p class="eyebrow">READING DISK<span class="blink">_</span></p></section><div id="error" role="alert" hidden></div></main>
+  <aside id="encounter" hidden></aside>
+  <aside id="it-guy" aria-live="polite" hidden><svg id="portrait" viewBox="44 867 101 82" aria-hidden="true"><defs><filter id="portrait-alpha" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .71 0 0 0 0 .69 0 0 0 0 .63 .333 .333 .333 0 0"/></filter></defs><image href="/assets/sprites.png" width="1536" height="1024" filter="url(#portrait-alpha)"/></svg><p id="it-line"></p></aside>
+  <footer><details class="game-menu"><summary aria-label="Game menu">[ MENU ]</summary><nav aria-label="Game menu"><a data-page href="/">HOME</a><button id="daily">DAILY</button><button id="practice">UNLIMITED</button><a data-page href="/archive">ARCHIVE</a><a data-page href="/virus">MY VIRUS</a><a data-page href="/attacks">ATTACK LOG</a><a data-page href="/help">HOW TO PLAY / FAQ</a><a data-page href="/settings">SETTINGS</a><a data-page href="/feedback">FEEDBACK</a><a data-page href="/privacy">PRIVACY</a></nav></details><div><button id="fullscreen" aria-label="Toggle fullscreen">[ FULLSCREEN ]</button><button id="sound" aria-label="Enable sound" aria-pressed="false">SND OFF</button></div></footer>
+  <dialog id="info"><form method="dialog"><button class="close" aria-label="Close dialog">[ ESC ] CLOSE</button></form><div id="info-content"></div></dialog>
+  <noscript>Enable JavaScript to load Germillion.</noscript>
+</body></html>

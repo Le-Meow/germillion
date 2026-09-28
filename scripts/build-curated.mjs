@@ -52,6 +52,12 @@ const sleep = old('mammal-sleep');
 sleep.entries = sleep.entries.map(e => e.name === 'Thick-tailed opposum' ? { ...e, name: 'Thick-tailed opossum', aliases: [...e.aliases, e.name] } : e);
 add('sleep-v1', 'sleep', 'Name a mammal.', 'Most hours asleep per day', sleep.unit, sleep.scope, sleep.source, sleep.entries,
   [[0, .05], [6, .15], [10, .3], [13, .5], [16, .7], [18, .85], [19.9, 1]]);
+// Retain the published question intact for saved runs, attacks and archives.
+const retired = [prompts.pop()];
+const supplement = JSON.parse(await readFile(new URL('../data/sleep-supplement.json', import.meta.url), 'utf8'));
+add('sleep-v2', 'sleep', 'Name a mammal.', 'Most hours asleep per day · estimates', sleep.unit,
+  'Published daily sleep estimates, combining the msleep study with sourced supplements. Sleep varies by individual, setting and study. Where a supplement gives a range, its midpoint is used as the game estimate; the range and source appear in the result. Broad names may need a species: choose a suggestion. This is a finite reviewed pool, not an exhaustive list of mammals.',
+  sleep.source, [...sleep.entries, ...supplement], retired[0].anchors);
 
 const speeds = new Map(raw.pokemonstats.trim().split(/\r?\n/).slice(1).map(row => row.split(',')).filter(r => r[1] === '6' && Number(r[0]) <= 151).map(r => [Number(r[0]), Number(r[2])]));
 const pokemon = old('pokemon-weight').entries.map((e, i) => ({ ...e, value: speeds.get(i + 1) }));
@@ -112,5 +118,11 @@ add('alcohol-2019-v1', 'alcohol', 'Name a country.', 'Most alcohol per person ag
   'https://data.worldbank.org/indicator/SH.ALC.PCAP.LI', alcohol,
   [[0, .05], [3, .15], [6, .3], [9, .5], [12, .7], [14, .85], [Math.max(...alcohol.map(e => e.value)), 1]]);
 
-await writeFile(new URL('../data/curated.json', import.meta.url), JSON.stringify({ version: '2026-09-27.2', importedAt: '2026-09-27', provenance, prompts }, null, 2) + '\n');
+// A published ID is immutable: a correction gets a new ID and retains the old set.
+const previous = JSON.parse(await readFile(new URL('../data/curated.json', import.meta.url), 'utf8'));
+const all = new Map([...retired, ...prompts].map(p => [p.id, p]));
+for (const p of [...(previous.retired || []), ...previous.prompts]) {
+  if (JSON.stringify(all.get(p.id)) !== JSON.stringify(p)) throw new Error(`Published question changed or removed: ${p.id}. Retire it and use a new ID.`);
+}
+await writeFile(new URL('../data/curated.json', import.meta.url), JSON.stringify({ version: '2026-09-28.1', importedAt: '2026-09-28', provenance, retired, prompts }, null, 2) + '\n');
 console.log(prompts.map(p => `${p.id}: ${p.entries.length} answers; leader ${[...p.entries].sort((a, b) => b.value - a.value)[0].name}`).join('\n'));

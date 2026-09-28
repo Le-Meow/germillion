@@ -1,6 +1,6 @@
 {
-  "version": "2026-09-27.2",
-  "importedAt": "2026-09-27",
+  "version": "2026-09-28.1",
+  "importedAt": "2026-09-28",
   "provenance": [
     {
       "name": "countries",
@@ -36,6 +36,502 @@
       "name": "statewater",
       "url": "https://www.census.gov/geographies/reference-files/2010/geo/state-area.html",
       "sha256": "ab36c22328508057d698beccf5959f57cbe12621bf420b77bfb93349da52af3c"
+    }
+  ],
+  "retired": [
+    {
+      "id": "sleep-v1",
+      "family": "sleep",
+      "title": "Name a mammal.",
+      "axis": "Most hours asleep per day",
+      "unit": "hours/day",
+      "scope": "83 mammals from the msleep study dataset. Study averages, not universal biological constants. Use a species name when possible (e.g. African elephant).",
+      "source": "https://ggplot2.tidyverse.org/reference/msleep.html",
+      "entries": [
+        {
+          "name": "Cheetah",
+          "value": 12.1,
+          "aliases": []
+        },
+        {
+          "name": "Owl monkey",
+          "value": 17,
+          "aliases": []
+        },
+        {
+          "name": "Mountain beaver",
+          "value": 14.4,
+          "aliases": []
+        },
+        {
+          "name": "Greater short-tailed shrew",
+          "value": 14.9,
+          "aliases": []
+        },
+        {
+          "name": "Cow",
+          "value": 4,
+          "aliases": []
+        },
+        {
+          "name": "Three-toed sloth",
+          "value": 14.4,
+          "aliases": [
+            "Sloth"
+          ]
+        },
+        {
+          "name": "Northern fur seal",
+          "value": 8.7,
+          "aliases": []
+        },
+        {
+          "name": "Vesper mouse",
+          "value": 7,
+          "aliases": []
+        },
+        {
+          "name": "Dog",
+          "value": 10.1,
+          "aliases": [
+            "Domestic dog"
+          ]
+        },
+        {
+          "name": "Roe deer",
+          "value": 3,
+          "aliases": [
+            "Deer"
+          ]
+        },
+        {
+          "name": "Goat",
+          "value": 5.3,
+          "aliases": []
+        },
+        {
+          "name": "Guinea pig",
+          "value": 9.4,
+          "aliases": []
+        },
+        {
+          "name": "Grivet",
+          "value": 10,
+          "aliases": []
+        },
+        {
+          "name": "Chinchilla",
+          "value": 12.5,
+          "aliases": []
+        },
+        {
+          "name": "Star-nosed mole",
+          "value": 10.3,
+          "aliases": []
+        },
+        {
+          "name": "African giant pouched rat",
+          "value": 8.3,
+          "aliases": []
+        },
+        {
+          "name": "Lesser short-tailed shrew",
+          "value": 9.1,
+          "aliases": []
+        },
+        {
+          "name": "Long-nosed armadillo",
+          "value": 17.4,
+          "aliases": []
+        },
+        {
+          "name": "Tree hyrax",
+          "value": 5.3,
+          "aliases": []
+        },
+        {
+          "name": "North American Opossum",
+          "value": 18,
+          "aliases": [
+            "Opossum",
+            "Virginia opossum"
+          ]
+        },
+        {
+          "name": "Asian elephant",
+          "value": 3.9,
+          "aliases": []
+        },
+        {
+          "name": "Big brown bat",
+          "value": 19.7,
+          "aliases": []
+        },
+        {
+          "name": "Horse",
+          "value": 2.9,
+          "aliases": []
+        },
+        {
+          "name": "Donkey",
+          "value": 3.1,
+          "aliases": []
+        },
+        {
+          "name": "European hedgehog",
+          "value": 10.1,
+          "aliases": [
+            "Hedgehog"
+          ]
+        },
+        {
+          "name": "Patas monkey",
+          "value": 10.9,
+          "aliases": []
+        },
+        {
+          "name": "Western american chipmunk",
+          "value": 14.9,
+          "aliases": []
+        },
+        {
+          "name": "Domestic cat",
+          "value": 12.5,
+          "aliases": [
+            "Cat",
+            "House cat"
+          ]
+        },
+        {
+          "name": "Galago",
+          "value": 9.8,
+          "aliases": []
+        },
+        {
+          "name": "Giraffe",
+          "value": 1.9,
+          "aliases": []
+        },
+        {
+          "name": "Pilot whale",
+          "value": 2.7,
+          "aliases": []
+        },
+        {
+          "name": "Gray seal",
+          "value": 6.2,
+          "aliases": []
+        },
+        {
+          "name": "Gray hyrax",
+          "value": 6.3,
+          "aliases": []
+        },
+        {
+          "name": "Human",
+          "value": 8,
+          "aliases": [
+            "Person",
+            "Homo sapiens"
+          ]
+        },
+        {
+          "name": "Mongoose lemur",
+          "value": 9.5,
+          "aliases": []
+        },
+        {
+          "name": "African elephant",
+          "value": 3.3,
+          "aliases": []
+        },
+        {
+          "name": "Thick-tailed opossum",
+          "value": 19.4,
+          "aliases": [
+            "Thick-tailed opossum",
+            "Thick-tailed opposum"
+          ]
+        },
+        {
+          "name": "Macaque",
+          "value": 10.1,
+          "aliases": []
+        },
+        {
+          "name": "Mongolian gerbil",
+          "value": 14.2,
+          "aliases": [
+            "Gerbil"
+          ]
+        },
+        {
+          "name": "Golden hamster",
+          "value": 14.3,
+          "aliases": [
+            "Hamster"
+          ]
+        },
+        {
+          "name": "Vole",
+          "value": 12.8,
+          "aliases": []
+        },
+        {
+          "name": "House mouse",
+          "value": 12.5,
+          "aliases": [
+            "Mouse"
+          ]
+        },
+        {
+          "name": "Little brown bat",
+          "value": 19.9,
+          "aliases": []
+        },
+        {
+          "name": "Round-tailed muskrat",
+          "value": 14.6,
+          "aliases": []
+        },
+        {
+          "name": "Slow loris",
+          "value": 11,
+          "aliases": []
+        },
+        {
+          "name": "Degu",
+          "value": 7.7,
+          "aliases": []
+        },
+        {
+          "name": "Northern grasshopper mouse",
+          "value": 14.5,
+          "aliases": []
+        },
+        {
+          "name": "Rabbit",
+          "value": 8.4,
+          "aliases": []
+        },
+        {
+          "name": "Sheep",
+          "value": 3.8,
+          "aliases": []
+        },
+        {
+          "name": "Chimpanzee",
+          "value": 9.7,
+          "aliases": [
+            "Chimp"
+          ]
+        },
+        {
+          "name": "Tiger",
+          "value": 15.8,
+          "aliases": []
+        },
+        {
+          "name": "Jaguar",
+          "value": 10.4,
+          "aliases": []
+        },
+        {
+          "name": "Lion",
+          "value": 13.5,
+          "aliases": []
+        },
+        {
+          "name": "Baboon",
+          "value": 9.4,
+          "aliases": []
+        },
+        {
+          "name": "Desert hedgehog",
+          "value": 10.3,
+          "aliases": []
+        },
+        {
+          "name": "Potto",
+          "value": 11,
+          "aliases": []
+        },
+        {
+          "name": "Deer mouse",
+          "value": 11.5,
+          "aliases": []
+        },
+        {
+          "name": "Phalanger",
+          "value": 13.7,
+          "aliases": []
+        },
+        {
+          "name": "Caspian seal",
+          "value": 3.5,
+          "aliases": []
+        },
+        {
+          "name": "Common porpoise",
+          "value": 5.6,
+          "aliases": []
+        },
+        {
+          "name": "Potoroo",
+          "value": 11.1,
+          "aliases": []
+        },
+        {
+          "name": "Giant armadillo",
+          "value": 18.1,
+          "aliases": []
+        },
+        {
+          "name": "Rock hyrax",
+          "value": 5.4,
+          "aliases": []
+        },
+        {
+          "name": "Laboratory rat",
+          "value": 13,
+          "aliases": [
+            "Rat"
+          ]
+        },
+        {
+          "name": "African striped mouse",
+          "value": 8.7,
+          "aliases": []
+        },
+        {
+          "name": "Squirrel monkey",
+          "value": 9.6,
+          "aliases": []
+        },
+        {
+          "name": "Eastern american mole",
+          "value": 8.4,
+          "aliases": []
+        },
+        {
+          "name": "Cotton rat",
+          "value": 11.3,
+          "aliases": []
+        },
+        {
+          "name": "Mole rat",
+          "value": 10.6,
+          "aliases": []
+        },
+        {
+          "name": "Arctic ground squirrel",
+          "value": 16.6,
+          "aliases": []
+        },
+        {
+          "name": "Thirteen-lined ground squirrel",
+          "value": 13.8,
+          "aliases": []
+        },
+        {
+          "name": "Golden-mantled ground squirrel",
+          "value": 15.9,
+          "aliases": []
+        },
+        {
+          "name": "Musk shrew",
+          "value": 12.8,
+          "aliases": []
+        },
+        {
+          "name": "Pig",
+          "value": 9.1,
+          "aliases": []
+        },
+        {
+          "name": "Short-nosed echidna",
+          "value": 8.6,
+          "aliases": [
+            "Echidna",
+            "Short-beaked echidna"
+          ]
+        },
+        {
+          "name": "Eastern american chipmunk",
+          "value": 15.8,
+          "aliases": []
+        },
+        {
+          "name": "Brazilian tapir",
+          "value": 4.4,
+          "aliases": [
+            "Tapir"
+          ]
+        },
+        {
+          "name": "Tenrec",
+          "value": 15.6,
+          "aliases": []
+        },
+        {
+          "name": "Tree shrew",
+          "value": 8.9,
+          "aliases": []
+        },
+        {
+          "name": "Bottle-nosed dolphin",
+          "value": 5.2,
+          "aliases": [
+            "Dolphin",
+            "Bottlenose dolphin"
+          ]
+        },
+        {
+          "name": "Genet",
+          "value": 6.3,
+          "aliases": []
+        },
+        {
+          "name": "Arctic fox",
+          "value": 12.5,
+          "aliases": []
+        },
+        {
+          "name": "Red fox",
+          "value": 9.8,
+          "aliases": []
+        }
+      ],
+      "anchors": [
+        [
+          0,
+          0.05
+        ],
+        [
+          6,
+          0.15
+        ],
+        [
+          10,
+          0.3
+        ],
+        [
+          13,
+          0.5
+        ],
+        [
+          16,
+          0.7
+        ],
+        [
+          18,
+          0.85
+        ],
+        [
+          19.9,
+          1
+        ]
+      ]
     }
   ],
   "prompts": [
@@ -1653,12 +2149,12 @@
       ]
     },
     {
-      "id": "sleep-v1",
+      "id": "sleep-v2",
       "family": "sleep",
       "title": "Name a mammal.",
-      "axis": "Most hours asleep per day",
+      "axis": "Most hours asleep per day · estimates",
       "unit": "hours/day",
-      "scope": "83 mammals from the msleep study dataset. Study averages, not universal biological constants. Use a species name when possible (e.g. African elephant).",
+      "scope": "Published daily sleep estimates, combining the msleep study with sourced supplements. Sleep varies by individual, setting and study. Where a supplement gives a range, its midpoint is used as the game estimate; the range and source appear in the result. Broad names may need a species: choose a suggestion. This is a finite reviewed pool, not an exhaustive list of mammals.",
       "source": "https://ggplot2.tidyverse.org/reference/msleep.html",
       "entries": [
         {
@@ -2113,6 +2609,17 @@
           "name": "Red fox",
           "value": 9.8,
           "aliases": []
+        },
+        {
+          "name": "Koala",
+          "value": 19,
+          "aliases": [
+            "Koalas",
+            "Koala bear",
+            "Phascolarctos cinereus"
+          ],
+          "source": "https://www.zoo.org.au/melbourne/animals-and-habitats/australian-bush/koala/",
+          "note": "Zoos Victoria reports about 18–20 hours asleep per day. The game uses 19 hours, the midpoint of that range, as an estimate rather than a measured species average."
         }
       ],
       "anchors": [

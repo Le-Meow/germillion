@@ -8,6 +8,7 @@
     "start": "node server.mjs",
     "dev": "node --watch server.mjs",
     "test": "node --test",
-    "data": "node scripts/build-data.mjs && node scripts/build-curated.mjs"
+    "data": "node scripts/build-data.mjs && node scripts/build-curated.mjs && node scripts/build-rotation.mjs",
+    "feedback": "node scripts/review-feedback.mjs"
   }
 }

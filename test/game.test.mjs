@@ -1,25 +1,79 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { data, dailyPrompts, prompts, grade, topFive, totalScore, distribution, attackPoints, CHUNK, normalize } from '../game.mjs';
+import { data, dailyPrompts, prompts, grade, matchAnswer, suggestions, topFive, totalScore, totalMB, distribution, attackPoints, CHUNK, normalize } from '../game.mjs';
 
 test('daily selection is deterministic, has seven families and varies by day', () => {
   assert.deepEqual(dailyPrompts('2026-09-27'), dailyPrompts('2026-09-27'));
   assert.equal(new Set(dailyPrompts('2026-09-27').map(id => prompts.get(id).family)).size, 7);
   assert.notDeepEqual(dailyPrompts('2026-09-27'), dailyPrompts('2026-09-28'));
 });
-test('aliases, accents and unambiguous spelling errors are accepted', () => {
+test('reviewed aliases and accents are accepted; uncertain spellings need confirmation', () => {
   assert.equal(normalize("The Côte d'Ivoire"), 'cotedivoire');
   for (const text of ['USA', 'America', 'United States of America']) assert.equal(grade('country-area', text).name, 'United States');
-  assert.equal(grade('country-area', 'Austraila').name, 'Australia');
+  assert.equal(grade('country-area', 'Austraila').valid, false);
+  assert(suggestions('country-area', 'Austraila').includes('Australia'));
   assert.equal(grade('element-number', 'Aluminum').name, 'Aluminium');
   assert.equal(grade('element-number', 'Au').name, 'Gold');
   assert.equal(grade('mammal-sleep', 'cat').name, 'Domestic cat');
   assert.equal(grade('film-runtime', 'LOTR 3').name, 'The Lord of the Rings: The Return of the King');
 });
+test('a different real place is never silently accepted as a country', () => {
+  for (const p of prompts.values()) if (p.entries.some(e => e.name === 'Liberia')) {
+    assert.equal(grade(p.id, 'Siberia').valid, false, p.id);
+    assert(suggestions(p.id, 'Siberia').includes('Liberia'), p.id);
+    assert.equal(grade(p.id, 'Liberia').name, 'Liberia');
+  }
+  assert.equal(grade('sleep-v2', 'koalaa').valid, false);
+  assert(suggestions('sleep-v2', 'koalaa').includes('Koala'));
+});
 test('empty, expired, short guesses and ambiguous names do not get free points', () => {
   for (const text of ['', '???', 'a', 'Atlantis']) assert.equal(grade('country-area', text).points, 0);
   assert.equal(grade('country-area', 'Russia', true).points, 0);
   assert.equal(grade('mammal-sleep', 'bat').valid, false);
+});
+
+test('suggestions disambiguate names without selecting a score for the player', () => {
+  assert.equal(grade('sleep-v2', 'bat').valid, false);
+  assert.deepEqual(suggestions('sleep-v2', 'bat'), ['Big brown bat', 'Little brown bat']);
+  assert.deepEqual(suggestions('sleep-v2', 'elephant'), ['African elephant', 'Asian elephant']);
+  assert.deepEqual(suggestions('oscar-nominations-v1', 'The Lion King'), ['The Lion King (1994)', 'The Lion King (2019)']);
+  assert.equal(grade('oscar-nominations-v1', 'The Lion King').valid, false);
+  assert.equal(grade('oscar-nominations-v1', 'The Lion King (2019)').value, 1);
+  for (const text of ['', 'a', '??', 'Atlantis']) assert.deepEqual(suggestions('forest-2021-v1', text), []);
+  const prompt = { entries: [
+    { name: 'Other', keys: ['other', 'alpha'] }, { name: 'Alpha', keys: ['alpha'] },
+  ] };
+  assert.equal(matchAnswer(prompt, ' Alpha ').name, 'Alpha');
+});
+
+test('koala and aliases use a sourced estimate; old questions remain frozen', () => {
+  for (const answer of ['koala', 'koalas', 'koala bear', 'Phascolarctos cinereus']) {
+    const hit = grade('sleep-v2', answer);
+    assert.equal(hit.name, 'Koala'); assert.equal(hit.value, 19);
+    assert.match(hit.note, /18–20/); assert.match(hit.source, /zoo.org.au/);
+    assert(hit.fraction > .9 && hit.fraction < 1);
+  }
+  assert(dailyPrompts('2026-09-27').includes('sleep-v1'));
+  assert(dailyPrompts('2026-09-28').includes('sleep-v2'));
+  assert.equal(grade('sleep-v1', 'Koala').valid, false, 'historical catalogue is not silently rewritten');
+  assert.equal(grade('sleep-v1', 'Cat').points, grade('sleep-v2', 'Cat').points);
+});
+
+test('MB totals round once and displayed-score ties use real observations', () => {
+  assert.equal(totalMB(Array(7).fill({ points: CHUNK })), 1024);
+  assert.equal(totalMB(Array(7).fill({ points: CHUNK / 2 })), 512);
+  assert.equal(totalMB(Array(7).fill({ points: 0 })), 0);
+  const stats = distribution([0, 512, 512, 1024], 512, 1024);
+  assert.equal(stats.below, 1); assert.equal(stats.equal, 2);
+  assert.equal(stats.bins[31], 1);
+});
+
+test('every reviewed alias resolves or offers its ambiguous canonical choice', () => {
+  for (const p of data.prompts) for (const e of p.entries) for (const alias of e.aliases) {
+    const hit = grade(p.id, alias);
+    if (hit.valid) assert.equal(hit.name, e.name, `${p.id}: alias ${alias} assigned to the wrong answer`);
+    else assert(suggestions(p.id, alias).includes(e.name), `${p.id}: alias ${alias} is unreachable`);
+  }
 });
 test('ranking is monotonic, ties score equally, and seven chunks sum to 100', () => {
   assert.equal(grade('country-area', 'Russia').points, CHUNK);
@@ -38,7 +92,7 @@ test('challenge ties split chunks; real score bins include 100%', () => {
   assert.equal(attackPoints({ valid: true, fraction: 0 }, { valid: false, fraction: 0 }), CHUNK);
   const s = distribution([0, 25, 50, 50, 100], 50);
   assert.equal(s.count, 5); assert.equal(s.below, 2); assert.equal(s.equal, 2);
-  assert.equal(s.bins[19], 1); assert.equal(s.bins.reduce((a, b) => a + b, 0), 5);
+  assert.equal(s.bins[31], 1); assert.equal(s.bins.reduce((a, b) => a + b, 0), 5);
 });
 
 test('reviewed set preserves factual order, ties, scope and useful score separation', () => {

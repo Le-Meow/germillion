@@ -1,0 +1,5 @@
+Minecraft mob hitbox measurements
+Source: https://github.com/PrismarineJS/minecraft-data/blob/master/data/pc/1.21.4/entities.json
+Java Edition 1.21.4; accessed 28 September 2026.
+Only entity names and numeric heights are included in the question catalogue, plus reviewed aliases.
+The source file SHA-256 is recorded in rotation.json. No game artwork is included.
