@@ -62,26 +62,37 @@ function distance(a, b) {
   }
   return prev[b.length];
 }
+// Published catalogues are immutable. Compile once per isolate, not per answer.
+const compiled=new WeakMap();
+function prepare(prompt){
+  if(compiled.has(prompt))return compiled.get(prompt);
+  const literal=new Map(),shortened=new Map(),aliases=new Map(),values=new Map(),suggestionKeys=new Map();
+  const add=(map,key,entry)=>map.set(key,map.has(key)&&map.get(key)!==entry?null:entry);
+  for(const e of prompt.entries){
+    const full=normalize('x '+e.name);if(!literal.has(full))literal.set(full,e);
+    add(shortened,normalize(e.name),e);
+    for(const key of e.keys)add(aliases,key,e);
+    values.set(e.value,(values.get(e.value)||0)+1);
+    suggestionKeys.set(e,[...new Set([...e.keys,...[e.name,...(e.aliases||[])].flatMap(k=>k.split(/[\s-]+/).map(normalize))])]);
+  }
+  const ordered=[...values.keys()].sort((a,b)=>a-b),max=ordered.at(-1),strengths=new Map();let lower=0;
+  for(const value of ordered){const count=values.get(value),fraction=prompt.anchors?payloadFraction(value,prompt.anchors):value===max?1:lower/(prompt.entries.length-1);strengths.set(value,{fraction,rank:prompt.entries.length-lower-count+1});lower+=count;}
+  const top=[...prompt.entries].sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name)).slice(0,5).map(({name,value,note,source})=>({name,value,note,source,rank:strengths.get(value).rank}));
+  const result={literal,shortened,aliases,strengths,top,suggestionKeys};compiled.set(prompt,result);return result;
+}
 export function matchAnswer(prompt, answer) {
   const key = normalize(answer);
   if (!key) return null;
-  // A canonical answer must never be stolen by another entry's alias.
-  const literal = normalize(`x ${answer}`);
-  const canonical = prompt.entries.find(e => normalize(`x ${e.name}`) === literal);
-  if (canonical) return canonical;
-  const shortened = prompt.entries.filter(e => normalize(e.name) === key);
-  if(shortened.length===1)return shortened[0];
-  if(shortened.length>1)return null;
-  const exact = prompt.entries.filter(e => e.keys.includes(key));
-  // Similar spelling can be a different place or thing (Siberia / Liberia).
-  // Only reviewed aliases are automatic; suggestions require a player choice.
-  return exact.length === 1 ? exact[0] : null;
+  const index=prepare(prompt),literal=index.literal.get(normalize('x '+answer));
+  if(literal)return literal;
+  if(index.shortened.has(key))return index.shortened.get(key);
+  return index.aliases.get(key)||null;
 }
 export function suggestions(id, answer) {
   const key = normalize(answer);
   if (key.length < 3) return [];
   const candidates = prompts.get(id).entries.map(e => {
-    const keys = [...e.keys, ...[e.name, ...e.aliases].flatMap(k => k.split(/[\s-]+/).map(normalize))];
+    const keys = prepare(prompts.get(id)).suggestionKeys.get(e);
     const rank = keys.includes(key) ? 0 : keys.some(k => k.startsWith(key)) ? 1
       : key.length >= 5 && keys.some(k => Math.abs(k.length - key.length) <= 2 && distance(key, k) <= (key.length >= 10 ? 2 : 1)) ? 2 : 3;
     return { name: e.name, rank };
@@ -92,19 +103,15 @@ export function suggestions(id, answer) {
 export function grade(id, answer, expired = false) {
   const prompt = prompts.get(id), entry = expired ? null : matchAnswer(prompt, answer);
   if (!entry) return { input: answer, valid: false, expired, points: 0, fraction: 0 };
-  const lower = prompt.entries.filter(e => e.value < entry.value).length;
-  const higher = prompt.entries.filter(e => e.value > entry.value).length;
-  const max = Math.max(...prompt.entries.map(e => e.value));
-  const fraction = prompt.anchors ? payloadFraction(entry.value, prompt.anchors) : entry.value === max ? 1 : lower / (prompt.entries.length - 1);
-  return { input: answer, valid: true, name: entry.name, value: entry.value, note: entry.note, source: entry.source, rank: higher + 1, total: prompt.entries.length, fraction, points: fraction * CHUNK, potency: potency(fraction) };
+  const {fraction,rank}=prepare(prompt).strengths.get(entry.value);
+  return { input: answer, valid: true, name: entry.name, value: entry.value, note: entry.note, source: entry.source, rank, total: prompt.entries.length, fraction, points: fraction * CHUNK, potency: potency(fraction) };
 }
 export function publicPrompt(id) {
   const { title, axis, unit, scope, source, entries, anchors } = prompts.get(id);
   return { title, axis, unit, scope, source, anchors, count: entries.length };
 }
 export function topFive(id) {
-  const entries = prompts.get(id).entries;
-  return [...entries].sort((a, b) => b.value - a.value || a.name.localeCompare(b.name)).slice(0, 5).map(({ name, value, note, source }) => ({ name, value, note, source, rank: entries.filter(e => e.value > value).length + 1 }));
+  return prepare(prompts.get(id)).top;
 }
 export function attackPoints(yours, theirs) {
   if (yours.valid === true && theirs.valid === false) return CHUNK;

@@ -1,6 +1,6 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { Buffer } from 'node:buffer';
-import { data, today, dailyPrompts, publicPrompt, grade, suggestions, topFive, totalScore, totalMB, MAX_MB, distribution, attackPoints, ROUND_MS, ROUNDS, streakSummary } from './game.mjs';
+import { data, today, dailyPrompts, publicPrompt, grade, suggestions, topFive, totalScore, totalMB, MAX_MB, attackPoints, ROUND_MS, ROUNDS, streakSummary } from './game.mjs';
 
 function problem(status,message){return Object.assign(new Error(message),{status});}
 async function body(request) {
@@ -31,7 +31,13 @@ const getRun = async id => {
 async function save(run) {
   const state=JSON.stringify(run);
   const result=await db.run('UPDATE runs SET state=?,score=? WHERE id=? AND state=?',state,run.status==='complete'?totalScore(run.answers):null,run.id,savedStates.get(run));
-  if(!result.changes) throw problem(409,'Your run changed in another request. Reload to continue.');
+  if(!result.changes){
+    const winner=await getRun(run.id);
+    if(!winner)throw problem(404,'Run not found.');
+    Object.assign(run,winner);
+    savedStates.set(run,savedStates.get(winner));
+    return;
+  }
   savedStates.set(run,state);
 }
 async function finishAnswer(run, answer, expired) {
@@ -51,37 +57,41 @@ async function finishAnswer(run, answer, expired) {
   return true;
 }
 async function stats(run) {
-  const scores = (await db.all("SELECT score,state FROM runs WHERE day=? AND mode='daily' AND score IS NOT NULL", run.day))
-    .map(r => JSON.parse(r.state)).filter(r => JSON.stringify(r.prompts) === JSON.stringify(run.prompts)).map(r => totalMB(r.answers));
-  return distribution(scores, totalMB(run.answers), MAX_MB);
+  const rows=await db.all('SELECT mb,players FROM daily_totals WHERE day=? AND prompt_key=?',run.day,JSON.stringify(run.prompts));
+  const score=totalMB(run.answers),bins=Array(32).fill(0);let count=0,below=0,equal=0;
+  for(const row of rows){count+=row.players;bins[Math.min(31,Math.floor(row.mb/32))]+=row.players;if(row.mb<score)below+=row.players;if(row.mb===score)equal+=row.players;}
+  return {count,bins,below,equal};
 }
 async function streak(player) {
-  return streakSummary((await db.all("SELECT day FROM runs WHERE player=? AND mode='daily' AND score IS NOT NULL", player)).map(r => r.day), today()).streak;
+  return streakSummary((await db.all("SELECT day FROM results WHERE player=? AND mode='daily'",player)).map(r=>r.day),today()).streak;
+}
+async function unseen(player,seen) {
+  const completed=await db.get("SELECT (SELECT count(*) FROM results WHERE mode='challenge' AND player=? AND completed>?) + (SELECT count(*) FROM results WHERE mode='challenge' AND attacker=? AND completed>?) AS n",player,seen,player,seen);
+  const incoming=await db.get("SELECT count(*) AS n FROM results r WHERE recipient=? AND completed>? AND NOT EXISTS (SELECT 1 FROM runs d WHERE d.player=? AND d.mode='challenge' AND json_extract(d.state,'$.challenge')=r.id)",player,seen,player);
+  return completed.n+incoming.n;
 }
 async function profile(player) {
-  const rows = (await db.all("SELECT day,state FROM runs WHERE player=? AND mode='daily' AND score IS NOT NULL ORDER BY day", player));
-  const yesterday = new Date(`${today()}T00:00:00Z`); yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const scores = rows.map(r => totalMB(JSON.parse(r.state).answers));
-  const identity = (await db.get('SELECT name,skin,recovery,seen FROM players WHERE id=?', player));
-  const old = rows.find(r => r.day === yesterday.toISOString().slice(0, 10));
-  return { best: scores.length ? Math.max(...scores) : null, played: scores.length, average: scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : null,
-    yesterday: old ? totalMB(JSON.parse(old.state).answers) : null, ...streakSummary(rows.map(r=>r.day), today()),
-    name: identity?.name || '', skin: identity?.skin ?? null, recoverable: Boolean(identity?.recovery), unseen: (await attackLog(player)).unseen };
+  const rows=await db.all("SELECT day,mb FROM results WHERE player=? AND mode='daily' ORDER BY day",player);
+  const identity=await db.get('SELECT name,skin,recovery,seen FROM players WHERE id=?',player);
+  const yesterday=new Date(Date.parse(today())-86400000).toISOString().slice(0,10);
+  let best=null,total=0;for(const row of rows){best=Math.max(best??0,row.mb);total+=row.mb;}
+  return {best,played:rows.length,average:rows.length?Math.round(total/rows.length):null,yesterday:rows.find(r=>r.day===yesterday)?.mb??null,...streakSummary(rows.map(r=>r.day),today()),name:identity?.name||'',skin:identity?.skin??null,recoverable:Boolean(identity?.recovery),unseen:await unseen(player,identity?.seen||0)};
 }
 const displayName = async player => (await db.get('SELECT name FROM players WHERE id=?',player))?.name || 'Someone';
 async function attackLog(player) {
-  const rows=await db.all("SELECT r.state,t.player AS attacker,t.id AS link,ap.name AS attackerName,dp.name AS defenderName FROM runs r JOIN runs t ON json_extract(r.state,'$.challenge')=t.id LEFT JOIN players ap ON ap.id=t.player LEFT JOIN players dp ON dp.id=r.player WHERE r.mode='challenge' AND (r.player=? OR t.player=?) ORDER BY r.created DESC",player,player);
+  const rows=await db.all("SELECT r.state,t.player AS attacker,t.id AS link,ap.name AS attackerName,dp.name AS defenderName FROM (SELECT run,created FROM attack_members WHERE player=? ORDER BY created DESC LIMIT 200) recent JOIN runs r ON r.id=recent.run JOIN runs t ON t.id=json_extract(r.state,'$.challenge') LEFT JOIN players ap ON ap.id=t.player LEFT JOIN players dp ON dp.id=r.player ORDER BY recent.created DESC",player);
   const all=rows.map(row=>{
     const run=JSON.parse(row.state),complete=run.status==='complete',sent=row.attacker===player;
     const infection=complete?Math.round(run.answers.reduce((s,a)=>s+attackPoints(a.opponent,a),0)*10)/10:null;
     return {id:run.id,link:row.link,sent,day:run.day,name:(sent?row.defenderName:row.attackerName)||'Someone',rival:createHash('sha256').update(sent?run.player:row.attacker).digest('hex').slice(0,16),status:complete?'complete':'playing',infection,result:complete?(infection===50?'draw':(sent?infection>50:infection<50)?'win':'loss'):null,updated:run.completedAt||0,sectors:complete?run.answers.map((a,i)=>({question:publicPrompt(run.prompts[i]).title,axis:publicPrompt(run.prompts[i]).axis,attacker:a.opponent.name||'Timed out',defender:a.name||'Timed out',outcome:a.attack>14?'blocked':a.attack>0?'split':'infected'})):[]};
   });
-  const totals={win:0,loss:0,draw:0},rivals=new Map();
-  for(const m of all)if(m.status==='complete'){totals[m.result]++;const rival=rivals.get(m.rival)||{name:m.name,win:0,loss:0,draw:0};rival[m.result]++;rivals.set(m.rival,rival);}
+  const totals=await db.get('SELECT COALESCE(sum(win),0) AS win,COALESCE(sum(loss),0) AS loss,COALESCE(sum(draw),0) AS draw FROM rivalries WHERE player=?',player);
+  const rivals=await db.all("SELECT COALESCE(NULLIF(p.name,''),'Someone') AS name,r.win,r.loss,r.draw FROM rivalries r LEFT JOIN players p ON p.id=r.rival WHERE r.player=? ORDER BY r.win+r.loss+r.draw DESC,r.rival LIMIT 100",player);
   const seen=(await db.get('SELECT seen FROM players WHERE id=?',player))?.seen||0;
-  const links=(await db.all("SELECT id,state FROM runs WHERE player=? AND score IS NOT NULL AND (json_extract(state,'$.sharedAt') IS NOT NULL OR json_extract(state,'$.name') IS NOT NULL) ORDER BY created DESC LIMIT 100",player)).map(r=>({id:r.id,day:JSON.parse(r.state).day,megabytes:totalMB(JSON.parse(r.state).answers)}));
-  const incoming=(await db.all("SELECT r.state,p.name FROM runs r LEFT JOIN players p ON p.id=r.player WHERE json_extract(r.state,'$.recipient')=? AND r.score IS NOT NULL ORDER BY r.created DESC LIMIT 100",player)).map(row=>({...JSON.parse(row.state),display:row.name})).filter(r=>!all.some(m=>m.link===r.id&&!m.sent)).map(r=>({id:r.id,name:r.display||'Someone',day:r.day,updated:r.completedAt||0}));
-  return {matches:all.slice(0,200),totals,rivals:[...rivals.values()],links,incoming,through:Date.now(),unseen:all.filter(m=>m.status==='complete'&&m.updated>seen).length+incoming.filter(r=>r.updated>seen).length};
+  const links=(await db.all("SELECT id,state,(SELECT count(*) FROM runs d WHERE d.mode='challenge' AND json_extract(d.state,'$.challenge')=runs.id) AS defenders FROM runs WHERE player=? AND score IS NOT NULL AND (json_extract(state,'$.sharedAt') IS NOT NULL OR json_extract(state,'$.name') IS NOT NULL) ORDER BY created DESC LIMIT 100",player)).map(r=>({id:r.id,defenders:r.defenders,day:JSON.parse(r.state).day,megabytes:totalMB(JSON.parse(r.state).answers)}));
+  const incoming=await db.all("SELECT r.id,COALESCE(NULLIF(p.name,''),'Someone') AS name,r.day,r.completed AS updated FROM results r LEFT JOIN players p ON p.id=r.player WHERE r.recipient=? AND NOT EXISTS (SELECT 1 FROM runs d WHERE d.player=? AND d.mode='challenge' AND json_extract(d.state,'$.challenge')=r.id) ORDER BY r.completed DESC LIMIT 100",player,player);
+  return {matches:all,totals,rivals,links,incoming,through:Date.now(),unseen:await unseen(player,seen)};
+
 }
 async function snapshot(run) {
   if (run.status === 'question' && Date.now() >= run.deadline) (await finishAnswer(run, '', true));
@@ -115,7 +125,7 @@ return async (request,{ip='local'}={}) => {
       for(const [key,value] of headers)out.headers.set(key,value);
       return out;
     }
-    if(config.rateLimit && !(await config.rateLimit.limit({key:ip})).success) return send(429,{error:'Too many requests. Please try again shortly.'});
+    if(config.rateLimit && !(await config.rateLimit.limit({key:ip})).success)throw problem(429,'Too many requests. Please try again shortly.');
     if (request.method === 'POST') {
       const expectedOrigin = config.origin || `${url.protocol.slice(0,-1)}://${url.host}`;
       if ((request.headers.get('origin') && request.headers.get('origin') !== expectedOrigin) || request.headers.get('sec-fetch-site') === 'cross-site') throw problem(403, 'Open Germillion directly to play.');
@@ -126,8 +136,9 @@ return async (request,{ip='local'}={}) => {
       player = token();
       cookie(player);
     }
-    player = (await db.get('SELECT player FROM sessions WHERE id=?', player))?.player || player;
-    (await db.run('INSERT OR IGNORE INTO players(id) VALUES(?)', player));
+    const identity=await db.get('SELECT player AS id FROM sessions WHERE id=? UNION ALL SELECT id FROM players WHERE id=? LIMIT 1',player,player);
+    if(identity)player=identity.id;
+    else await db.run('INSERT OR IGNORE INTO players(id) VALUES(?)',player);
     if (url.pathname === '/api/profile') {
       if (request.method === 'POST') {
         const input = await body(request);
@@ -169,10 +180,10 @@ return async (request,{ip='local'}={}) => {
     if (url.pathname === '/api/feedback' && request.method === 'POST') {
       const input=await body(request);
       if(!['answer','bug','question','other'].includes(input.kind)||typeof input.message!=='string'||!input.message.trim()||input.message.length>2000) throw problem(400,'Choose a feedback type and write up to 2,000 characters.');
-      if((await db.get('SELECT count(*) AS n FROM feedback WHERE player=? AND created>?', player,Date.now()-86400000)).n>=20) throw problem(429,'Feedback saved for today. Please try again tomorrow.');
       if(input.run){if(typeof input.run!=='string')throw problem(400,'Question not found.');const owned=(await getRun(input.run)); if(!owned||owned.player!==player||!Number.isInteger(input.round)||input.round<0||input.round>=7||input.round>owned.answers.length) throw problem(400,'Question not found.');}
       if(input.answer!==undefined&&(typeof input.answer!=='string'||input.answer.length>160))throw problem(400,'Answer is too long.');
-      const id=token();(await db.run('INSERT INTO feedback VALUES(?,?,?,?,?,?,?,?)', id,player,Date.now(),input.kind,input.message.trim(),input.run||null,input.run?input.round:null,input.answer||null));
+      const id=token();const inserted=await db.run('INSERT INTO feedback SELECT ?,?,?,?,?,?,?,? WHERE (SELECT count(*) FROM feedback WHERE player=? AND created>?)<20',id,player,Date.now(),input.kind,input.message.trim(),input.run||null,input.run?input.round:null,input.answer||null,player,Date.now()-86400000);
+      if(!inserted.changes)throw problem(429,'Feedback saved for today. Please try again tomorrow.');
       return send(201,{id});
     }
     if (url.pathname === '/api/today' && request.method === 'GET') {
@@ -208,13 +219,11 @@ return async (request,{ip='local'}={}) => {
         if (existing) return send(200, (await snapshot((await getRun(existing.id)))));
       }
       if (mode === 'challenge') {
-        const previous = (await db.all("SELECT state FROM runs WHERE player=? AND mode='challenge'", player)).map(r => JSON.parse(r.state)).find(r => r.challenge === target.id);
+        const previous=await db.get("SELECT id FROM runs WHERE player=? AND mode='challenge' AND json_extract(state,'$.challenge')=?",player,target.id);
         if (previous) return send(200, (await snapshot(await getRun(previous.id))));
         const daily=(await db.get("SELECT state FROM runs WHERE player=? AND day=? AND mode='daily'", player,day));
         if(daily){const current=(await getRun(JSON.parse(daily.state).id));if(current.status!=='complete'&&JSON.stringify(current.prompts)===JSON.stringify(target.prompts))throw problem(409,'Finish your daily first. We will use those answers to defend this attack.');}
       }
-      const recent = (await db.get('SELECT COUNT(*) AS n FROM runs WHERE player=? AND created>?', player, Date.now() - 3_600_000)).n;
-      if (recent >= 30) throw problem(429, 'Too many new runs. Come back in a little while.');
       const id = token();
       const run = { id, player, day, mode, status: 'ready', prompts: target?.prompts || dailyPrompts(mode === 'practice' ? id : day), answers: [], deadline: null, challenge: target?.id || null };
       if(input.counterOf){
@@ -224,13 +233,15 @@ return async (request,{ip='local'}={}) => {
         run.prompts=dailyPrompts(id,previous.prompts);
       }
       if(target){
-        const first=(await db.all("SELECT state FROM runs WHERE player=? AND mode='daily' AND score IS NOT NULL ORDER BY created", player)).map(r=>JSON.parse(r.state)).find(r=>JSON.stringify(r.prompts)===JSON.stringify(target.prompts)&&r.day===target.day);
+        const row=await db.get("SELECT state FROM runs WHERE player=? AND day=? AND mode='daily' AND score IS NOT NULL",player,target.day);
+        const candidate=row?JSON.parse(row.state):null;
+        const first=candidate&&JSON.stringify(candidate.prompts)===JSON.stringify(target.prompts)?candidate:null;
         if(first){run.answers=first.answers.map((a,i)=>({...a,opponent:target.answers[i],attack:attackPoints(a,target.answers[i])}));run.status='complete';run.completedAt=Date.now();run.reused=true;}
       }
-      const inserted=await db.run('INSERT OR IGNORE INTO runs(id,player,day,mode,state,score,created) VALUES(?,?,?,?,?,?,?)',id,player,day,mode,JSON.stringify(run),run.status==='complete'?totalScore(run.answers):null,Date.now());
+      const inserted=await db.run('INSERT OR IGNORE INTO runs(id,player,day,mode,state,score,created) SELECT ?,?,?,?,?,?,? WHERE (SELECT count(*) FROM runs WHERE player=? AND created>?)<30',id,player,day,mode,JSON.stringify(run),run.status==='complete'?totalScore(run.answers):null,Date.now(),player,Date.now()-3600000);
       if(!inserted.changes){
         const existing=mode==='daily'?await db.get("SELECT id FROM runs WHERE player=? AND day=? AND mode='daily'",player,day):await db.get("SELECT id FROM runs WHERE player=? AND mode='challenge' AND json_extract(state,'$.challenge')=?",player,target?.id||'');
-        if(!existing)throw problem(409,'Run already created. Reload to continue.');
+        if(!existing)throw problem(429,'Too many new runs. Come back in a little while.');
         return send(200,await snapshot(await getRun(existing.id)));
       }
       return send(201, (await snapshot(run)));
@@ -273,6 +284,8 @@ return async (request,{ip='local'}={}) => {
     throw problem(404, 'Not found.');
 
   } catch(error){
+    if(!error.status&&/overloaded|SQLITE_BUSY|database is locked|D1_ERROR.*(timeout|timed out)/i.test(error.message)){headers.set('Retry-After','2');return send(503,{error:'The system is busy. Please try again shortly.'});}
+    if(error.status===429)headers.set('Retry-After','60');
     if(!error.status)console.error(error);
     return send(error.status||500,{error:error.status?error.message:'Connection interrupted. Please try again.'});
   }

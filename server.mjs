@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { DatabaseSync } from 'node:sqlite';
 import { readFile,mkdir } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import { migrate } from './migrate.mjs';
 import { dirname,resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream';
@@ -11,7 +11,7 @@ const dbPath=process.env.DB_PATH||resolve(root,'var/germillion.sqlite');
 await mkdir(dirname(dbPath),{recursive:true});
 const sqlite=new DatabaseSync(dbPath);
 sqlite.exec('PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;');
-sqlite.exec(readFileSync(new URL('./migrations/0001_initial.sql',import.meta.url),'utf8'));
+migrate(sqlite);
 const db={get:async(sql,...args)=>sqlite.prepare(sql).get(...args),all:async(sql,...args)=>sqlite.prepare(sql).all(...args),run:async(sql,...args)=>sqlite.prepare(sql).run(...args)};
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],

@@ -46,6 +46,8 @@ The approved mockups are kept intact as local image atlases in `public/assets`; 
 
 ## Hosting
 
+Backend traffic tests and remaining launch checks are recorded in [TRAFFIC.md](TRAFFIC.md). Daily charts use bounded score summaries; database triggers and indexes preserve results under concurrent submissions. Run `node scripts/load-traffic.mjs 1000 10000 200` for the isolated local load check.
+
 The intended host is **Cloudflare Workers with a separate Germillion D1 database** in the existing account. `app.mjs` contains the shared request handler, `worker.mjs` adapts D1 and static assets, and `server.mjs` retains the local Node/SQLite option. The approved interface and scoring code are shared. GitHub Pages alone cannot run the scoring API or shared results.
 
 Cloudflare setup: `npm ci`, authorize Wrangler, create the `germillion` D1 database, and replace the local-only zero UUID in `wrangler.jsonc` with the returned database ID before publishing. Run `npx wrangler d1 migrations apply DB --remote`, then `npm run deploy`. No Seasons database or Worker is used. Configure the custom domain after testing the generated workers.dev URL. No paid plan upgrade is required by this configuration; account quotas still apply.
@@ -69,7 +71,7 @@ Use HTTPS and a persistent disk, and back up the SQLite database. The app only s
 
 The intended public domain is **germillion.io**. Configure the host's health check as `GET /healthz`; it checks the database connection without creating a player or cookie. Until DNS is connected, set `PUBLIC_ORIGIN` to the host's actual preview HTTPS origin for testing, then change it to `https://germillion.io` for launch.
 
-`germillion` is an HttpOnly browser cookie. Optional recovery codes map new device sessions to the same player; users without a saved code cannot recover a lost anonymous profile. Creating a replacement code invalidates the previous code (existing signed-in devices remain connected). Clearing the cookie without recovering permits a new profile. The leaderboard is suitable for a prototype, **not tamper-proof competition**. Before a broad streamer launch, add edge rate limiting and stronger player identity if competitive integrity matters. No payment system or analytics tracking is included.
+`germillion` is an HttpOnly browser cookie. Optional recovery codes map new device sessions to the same player; users without a saved code cannot recover a lost anonymous profile. Creating a replacement code invalidates the previous code (existing signed-in devices remain connected). Clearing the cookie without recovering permits a new profile. The leaderboard is suitable for a prototype, **not tamper-proof competition**. Edge rate limits are configured; consider stronger player identity if competitive integrity matters. No payment system or analytics tracking is included.
 
 ## Data credits
 

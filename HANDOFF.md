@@ -29,7 +29,7 @@ Deploy the existing Node server or Dockerfile to a host with persistent storage.
 - Final human playtest of weak/medium/strong hit timing, camera movement, reveals and sparse sounds.
 - Actual mobile keyboard/layout and Chrome fullscreen testing. Prior browser viewport emulation did not successfully produce a phone-sized viewport.
 - Hosted two-device attack, defence, result notification, counterattack and recovery-code testing. Local API and desktop flow checks already exist; public links are not yet verified.
-- Add appropriate request limits, run a concurrent-player load check, and configure operational error reporting before streamer traffic. Analytics, payments and themed packs are not implemented.
+- Backend traffic hardening and local load tests are complete; see `TRAFFIC.md` for exact evidence and limits. Apply both migrations to D1. A live staging load rehearsal, paid upgrade, operational alerts and verified restore remain required before streamer promotion. Analytics, payments and themed packs are not implemented.
 - Integrate separately researched content as new immutable question IDs; retain old IDs for saved runs and attacks. Never invent player distributions or silently accept fuzzy suggestions.
 
 Keep the scope focused on finishing and deploying this game, not rebuilding it in another stack.

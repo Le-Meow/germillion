@@ -1,6 +1,6 @@
 FROM node:24-alpine
 WORKDIR /app
-COPY --chown=node:node package.json server.mjs app.mjs game.mjs ./
+COPY --chown=node:node package.json server.mjs app.mjs game.mjs migrate.mjs ./
 COPY --chown=node:node migrations ./migrations
 COPY --chown=node:node public ./public
 COPY --chown=node:node data/*.json data/*.txt ./data/

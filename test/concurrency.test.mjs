@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { readFileSync } from 'node:fs';
+import { migrate } from '../migrate.mjs';
 import { createApp } from '../app.mjs';
-import { topFive,grade } from '../game.mjs';
+import { topFive } from '../game.mjs';
 
 test('async database requests preserve one daily, one defence and one accepted answer', async t => {
   const sqlite=new DatabaseSync(':memory:');t.after(()=>sqlite.close());
-  sqlite.exec(readFileSync(new URL('../migrations/0001_initial.sql',import.meta.url),'utf8'));
+  migrate(sqlite);
   const db=Object.fromEntries(['get','all','run'].map(method=>[method,async(sql,...args)=>sqlite.prepare(sql)[method](...args)]));
   const app=createApp(db),player='A'.repeat(24);
   async function request(route,body,cookie=player){
@@ -27,8 +27,13 @@ test('async database requests preserve one daily, one defence and one accepted a
   state=JSON.parse(sqlite.prepare('SELECT state FROM runs WHERE id=?').get(id).state);
   assert.equal(state.answers.length,1);
   assert.equal((await request(`/api/run/${id}/answer`,{round:0,answer:choices[1].name})).data.last.name,state.answers[0].name);
-  state.answers=state.prompts.map(p=>grade(p,topFive(p)[0].name));state.status='complete';
-  sqlite.prepare('UPDATE runs SET state=?,score=100 WHERE id=?').run(JSON.stringify(state),id);
+  for(let round=1;round<7;round++){
+    await request(`/api/run/${id}/start`,{round});
+    const replies=await Promise.all(Array.from({length:round===6?100:1},()=>request(`/api/run/${id}/answer`,{round,answer:topFive(state.prompts[round])[0].name})));
+    assert(replies.every(r=>r.status===200));
+    assert.equal(new Set(replies.map(r=>r.data.megabytes)).size,1);
+  }
+  assert.equal(sqlite.prepare('SELECT sum(players) AS n FROM daily_totals').get().n,1,'100 final submissions count once');
   const defences=await Promise.all(Array.from({length:4},()=>request('/api/run',{mode:'challenge',challenge:id},'B'.repeat(24))));
   assert(defences.every(r=>[200,201].includes(r.status)));
   assert.equal(new Set(defences.map(r=>r.data.id)).size,1);
