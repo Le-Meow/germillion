@@ -148,6 +148,10 @@ const server = createServer(async (req, res) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   try {
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/healthz' && req.method === 'GET') {
+      db.prepare('SELECT 1').get();
+      return send(res, 200, { ok: true });
+    }
     if (!url.pathname.startsWith('/api/')) {
       const file = files.get(url.pathname);
       if (req.method !== 'GET' || !file) { res.writeHead(404); res.end('Not found'); return; }

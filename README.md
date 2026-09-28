@@ -59,6 +59,8 @@ Environment variables:
 
 Use HTTPS and a persistent disk, and back up the SQLite database. The app only serves an explicit public-file allowlist; the answer catalogue and database stay server-side. Shared links expose the optional chosen name and completed challenge comparison, not browser identifiers.
 
+The intended public domain is **germillion.io**. Configure the host's health check as `GET /healthz`; it checks the database connection without creating a player or cookie. Until DNS is connected, set `PUBLIC_ORIGIN` to the host's actual preview HTTPS origin for testing, then change it to `https://germillion.io` for launch.
+
 `germillion` is an HttpOnly browser cookie. Optional recovery codes map new device sessions to the same player; users without a saved code cannot recover a lost anonymous profile. Creating a replacement code invalidates the previous code (existing signed-in devices remain connected). Clearing the cookie without recovering permits a new profile. The leaderboard is suitable for a prototype, **not tamper-proof competition**. Before a broad streamer launch, add edge rate limiting and stronger player identity if competitive integrity matters. No payment system or analytics tracking is included.
 
 ## Data credits

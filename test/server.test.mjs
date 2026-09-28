@@ -23,6 +23,13 @@ test('HTTP game lifecycle, timing, persistence, isolation and challenge distribu
   async function stop() { if (child && child.exitCode === null) { const exited = once(child, 'exit'); child.kill(); await exited; } }
   t.after(async () => { await stop(); await rm(dir, { recursive: true, force: true, maxRetries: 4, retryDelay: 150 }); });
   await start();
+  const health = await fetch(origin + '/healthz');
+  assert.equal(health.status, 200);
+  assert.deepEqual(await health.json(), { ok: true });
+  assert.equal(health.headers.get('set-cookie'), null, 'host health checks do not create player sessions');
+  const healthDb = new DatabaseSync(path);
+  assert.equal(healthDb.prepare('SELECT count(*) AS n FROM players').get().n, 0);
+  healthDb.close();
   function client() {
     let cookie;
     return async (route, body, headers = {}) => {
