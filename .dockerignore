@@ -3,3 +3,7 @@ var
 data/*.raw
 node_modules
 test-artifacts
+.wrangler
+.dev.vars*
+.env*
+dist

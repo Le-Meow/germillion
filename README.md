@@ -6,7 +6,7 @@ A playable daily trivia game set inside an abstract VGA-era computer. Insert the
 
 ## Run
 
-Requires **Node.js 24 or later**. No npm dependencies or build step.
+Requires **Node.js 24 or later**. The local Node server has no runtime dependencies or build step. Cloudflare development/deployment uses Wrangler (`npm ci`).
 
 ```sh
 npm start
@@ -46,7 +46,15 @@ The approved mockups are kept intact as local image atlases in `public/assets`; 
 
 ## Hosting
 
-This runs a Node HTTP server and SQLite database. **GitHub stores the source; GitHub Pages alone cannot run the scoring API or shared results.** Deploy the included Dockerfile on a Node/container host with a persistent volume mounted at `/app/var`.
+The intended host is **Cloudflare Workers with a separate Germillion D1 database** in the existing account. `app.mjs` contains the shared request handler, `worker.mjs` adapts D1 and static assets, and `server.mjs` retains the local Node/SQLite option. The approved interface and scoring code are shared. GitHub Pages alone cannot run the scoring API or shared results.
+
+Cloudflare setup: `npm ci`, authorize Wrangler, create the `germillion` D1 database, and replace the local-only zero UUID in `wrangler.jsonc` with the returned database ID before publishing. Run `npx wrangler d1 migrations apply DB --remote`, then `npm run deploy`. No Seasons database or Worker is used. Configure the custom domain after testing the generated workers.dev URL. No paid plan upgrade is required by this configuration; account quotas still apply.
+
+For the emulator, run `npx wrangler d1 migrations apply DB --local`, then `npm run dev:cloudflare`. `npm run smoke -- http://127.0.0.1:8787` checks practice scoring, invalid-answer retries, attacks/counterattacks and cross-device recovery. It creates isolated QA practice profiles and matches, never ranked daily results. Use the actual HTTPS origin to run the same check after deployment.
+
+Cloudflare rate-limit bindings allow 240 API requests/minute/IP and 10 recovery attempts/minute/IP. These are per-location safeguards, not global identity enforcement. Database constraints and conditional updates prevent simultaneous requests creating duplicate dailies/defences or overwriting accepted answers. Worker logs are sampled; database recovery uses D1 Time Travel plus exports. Configure and verify recovery before streamer traffic.
+
+Alternatively, the included Dockerfile runs on a Node/container host with a persistent volume mounted at `/app/var`.
 
 Environment variables:
 
@@ -82,10 +90,10 @@ Source links and coverage are also available inside the game. Review source term
 
 `npm run feedback` reads the latest 100 feedback submissions from the configured database. It prints report IDs, dates, text and question/answer context, without browser identity or recovery credentials. Answer reports never alter a live score. The HTTP endpoint enforces ownership for attached run context and limits submissions per profile.
 
-`npm test` runs 19 checks covering scoring, source coverage, historical questions, movement, block charts, each streak milestone, missed days, server-enforced skin locks, recovery/rotation, attack ownership, asymmetric wins/losses, ties, daily reuse, counterattack delivery, feedback validation and restart persistence. QA fixture data is isolated under ignored `var/qa-features.sqlite`; never use it as the live database.
+`npm test` runs the scoring, movement, profile, friend-flow and persistence checks, including concurrent requests against the shared async handler. The Cloudflare emulator smoke test covers the deployed runtime and D1 adapter separately. QA fixture data is isolated under ignored `var/qa-features.sqlite`; never use it as the live database.
 
 History shows the latest 100 runs; the attack view shows the latest 200 matches. All stored records remain in SQLite. Rivalry totals include all matches, and archive completion markers use the full history. Profile statistics and streaks include all completed dailies. The new pages support direct links and browser Back, and settings include sound, fullscreen, reduced motion/flash and higher contrast.
 
 Minecraft measurements are factual extracts from PrismarineJS minecraft-data; attribution is retained in `data/MINECRAFT-DATA-SOURCE.txt`. Its versioned extract and SHA-256 are recorded in `rotation.json`. The builder freezes published IDs. Mob hitbox size is deliberately named in the prompt: it is not visual sprite height. Minecraft names are factual references; no Minecraft artwork is used.
 
-Deployment was explicitly deferred on 28 September 2026. The working preview remains local on port 3001. Off-computer attack links require a public HTTPS origin and persistent database; do not present localhost links as publicly playable.
+Deployment was subsequently authorized on 28 September 2026 using the user's existing Cloudflare account and Porkbun-registered germillion.io. The Cloudflare bundle and local emulator are verified; live provisioning and DNS are still pending. Do not present localhost links as publicly playable.

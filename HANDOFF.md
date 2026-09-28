@@ -12,7 +12,9 @@ The playable game already exists in this repository. Continue this implementatio
 
 ## Hosting next
 
-The user owns **germillion.io**. No hosting provider or DNS access is configured here. This handoff does not authorize buying hosting services.
+The user owns **germillion.io**, registered at Porkbun, and subsequently chose their existing Cloudflare account. Cloudflare Workers/D1 support is implemented and emulator-tested. Wrangler login authorization, live database provisioning and DNS connection remain pending. Do not buy hosting or change an account plan without approval.
+
+Read the Cloudflare section of README.md first. The Node/Docker instructions below are an alternative retained for local development and other hosts. `app.mjs` is now the shared async request handler. `worker.mjs` provides the D1 adapter. New database writes protect accepted answers against concurrent requests.
 
 Deploy the existing Node server or Dockerfile to a host with persistent storage. GitHub Pages alone cannot run this application.
 

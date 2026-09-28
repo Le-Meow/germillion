@@ -4,3 +4,6 @@ var/
 data/*.raw
 test-artifacts/
 *.log
+.wrangler/
+.dev.vars*
+dist/

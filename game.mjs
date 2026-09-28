@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-const legacy = JSON.parse(readFileSync(new URL('./data/prompts.json', import.meta.url), 'utf8'));
-export const data = JSON.parse(readFileSync(new URL('./data/curated.json', import.meta.url), 'utf8'));
-export const rotation = JSON.parse(readFileSync(new URL('./data/rotation.json', import.meta.url), 'utf8'));
+import legacy from './data/prompts.json' with { type: 'json' };
+import data from './data/curated.json' with { type: 'json' };
+export { data };
+import rotation from './data/rotation.json' with { type: 'json' };
+export { rotation };
 export const ROUND_MS = 20_000;
 export const ROUNDS = 7;
 export const CHUNK = 100 / ROUNDS;
